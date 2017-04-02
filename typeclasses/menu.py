@@ -766,7 +766,7 @@ def kick(caller):
 		EvMenu(caller.db.target, "typeclasses.menu", startnode="attack_node", auto_quit=False, cmd_on_exit=None)
 	text = ""
 	options = ({"key": "skip",
-				"goto": "skip_attack"})
+		"goto": "skip_attack"})
 	return text, options
 
 def axe(caller):
@@ -1788,12 +1788,11 @@ def block(caller):
 		roll = roll_dice(1,10)
 		if (roll >= 6):
 			soakpoints = soakpoints + 1
-
+	dmg = damage
 	caller.db.start_time = 99999999999999999999999
 	if (defendpoints > 0):
 		tst = damage2
 		dmg2 = damage
-		dmg = damage
 		cnt2 = 0
 		while (cnt2 < tst):
 			cnt2 = cnt2 + 1
@@ -1811,6 +1810,8 @@ def block(caller):
 		if(caller.db.target.db.weapon == 0):
 			caller.msg("|/|gYou block %i out of %i of %s's attack points." % (defendpoints, dmg2, caller.db.target))
 			caller.msg("|/|g%s causes %i points of damage to you." % (caller.db.target, reduced))
+			if (soakpoints > reduced):
+				soakpoints = reduced
 			if (soakpoints > 0):
 				caller.msg("|/|gYou soak %i out of %i points of bashing damage." % (soakpoints, reduced))
 			if (reduced - soakpoints > 0):
@@ -1820,25 +1821,53 @@ def block(caller):
 			caller.db.target.msg("|/|gYou deal %i points of damage with your attack." % (reduced))
 	
 			if(soakpoints>0):
-				caller.db.target.msg("|/|g%s soaks %i points of damage from your punch." % (caller, soakpoints))
+				caller.db.target.msg("|/|g%s soaks %i points of damage from your attack." % (caller, soakpoints))
 			if(reduced-soakpoints > 0):
 				caller.db.target.msg("|/|g%s loses a total of %i hit points." % (caller, reduced - soakpoints))
 
 		if(caller.db.target.db.weapon == 1):
-			caller.msg("|/|gYou cannot block %s's attack points." % (caller.db.target))
-			caller.msg("|/|g%s causes %i points of lethal damage to you." % (caller.db.target, dmg2))
-			caller.db.lethal = caller.db.lethal + dmg2
-			caller.db.target.msg("|/|g%s can't block your attack." % (caller, defendpoints))
-			caller.db.target.msg("|/|gYou deal %i points of lethal damage." % (dmg2))
+			caller.msg("|/|gYou can't block %s's attack points." % (caller.db.target))
+			caller.msg("|/|g%s causes %i points of lethal damage to you." % (caller.db.target, dmg))
+			caller.db.lethal = caller.db.lethal + dmg
+			caller.db.target.msg("|/|g%s fails to block your attack." % (caller))
+			caller.db.target.msg("|/|gYou deal %i points of lethal damage." % (dmg))
 			
 	else:
 		caller.msg("|/|rYou have been hit by %s." % caller.db.target)
 		caller.db.target.msg("|/|r%s fails to dodge your attack." % caller)
 
+		if(caller.db.target.db.weapon == 0):
+			caller.msg("|/|g%s causes %i points of damage to you." % (caller.db.target, dmg))
+			caller.msg("|/|gYou soak %i out of %i points of bashing damage." % (soakpoints, dmg))
+			caller.msg("|/|gYou lose a total of %i health points." % (dmg - soakpoints))
+			caller.db.bashing = caller.db.bashing + (dmg - soakpoints)
+			caller.db.target.msg("|/|gYou deal %i points of damage with your punch." % (dmg))
+			caller.db.target.msg("|/|g%s soaks %i points of damage from your punch." % (caller, soakpoints))
+			caller.db.target.msg("|/|g%s loses a total of %i hit points." % (caller, dmg - soakpoints))
+
+		if(caller.db.target.db.weapon == 1):
+			caller.msg("|/|g%s causes %i points of lethal damage to you." % (caller.db.target, dmg))
+			caller.msg("|/|gYou lose a total of %i health points." % (dmg))
+			caller.db.bashing = caller.db.bashing + dmg
+			caller.db.target.msg("|/|gYou deal %i points of lethal damage with your attack." % (dmg))
+			caller.db.target.msg("|/|g%s loses a total of %i hit points." % (caller, dmg))
+
+
 	EvMenu(caller, "typeclasses.menu", startnode="attack_node", auto_quit=False, cmd_on_exit=None)
 	text = ""
 	options = ({"key": "skip",
 		"goto": "skip_attack"})
+	
+	if(caller.db.alive == 0 or caller.db.target.db.alive == 0):
+		caller.db.conscious = 1
+		caller.db.target.db.conscious = 1
+		caller.msg("|rGAMEOVER")
+		caller.db.target.msg("|rGAMEOVER")
+		caller.db.target.ndb._menutree.close_menu()
+		caller.ndb._menutree.close_menu()
+		text = ""
+		options = ()
+
 	return text, options
 
 def flee_attack(caller):
